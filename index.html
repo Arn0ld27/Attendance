@@ -679,15 +679,15 @@
       <!-- Replace 'your-video-file.mp4' with your actual video file path or URL -->
       Your browser does not support the video tag.
     </video>
-    <button class="skip-btn" onclick="skipIntro()">Skip Intro ›</button>
+   
   </div>
 
   <!-- HOME / LANDING PAGE -->
   <div id="homeView">
-    <h1>Event Attendance Portal</h1>
+    <h1>CCS Attendance </h1>
     <p>Please select your portal to proceed with attendance tracking, photo review, or section summaries.</p>
     <div class="home-btn-group">
-      <button class="home-btn btn-portal" onclick="openApp('kiosk')">Open Attendance Kiosk</button>
+      <button class="home-btn btn-portal" onclick="openApp('kiosk')">Open Attendance </button>
       <button class="home-btn btn-dashboard" onclick="openApp('gallery')">Open Gallery Dashboard</button>
       <button class="home-btn btn-dashboard" onclick="openApp('summary')">Open Names Summary</button>
     </div>
@@ -705,14 +705,14 @@
     <!-- KIOSK VIEW -->
     <div id="kioskView" class="container kiosk-card">
       <h2>
-        <span>Student Attendance Kiosk</span>
+        <span>CCS Student Attendance </span>
         <button class="back-home" onclick="goHome()">Back to Home</button>
       </h2>
       <div class="clock" id="liveClock">Loading time...</div>
 
       <div class="names-section">
         <div class="names-header">
-          <span id="participantCountLabel">Participants (1)</span>
+          <span id="participantCountLabel">Add names if group pic..</span>
           <button type="button" class="add-student-btn" onclick="addStudentField()">+ Add Student</button>
         </div>
         <div id="nameInputsContainer">
@@ -724,12 +724,12 @@
 
       <select id="userSection">
         <option value="" disabled selected>Select Section...</option>
-        <option value="Section A">Section A</option>
-        <option value="Section B">Section B</option>
-        <option value="Section C">Section C</option>
-        <option value="Section D">Section D</option>
-        <option value="Section E">Section E</option>
-        <option value="Section F">Section F</option>
+        <option value="Section A">BSCS 2A</option>
+        <option value="Section B">BSCS 2B</option>
+        <option value="Section C">BSCS 2C</option>
+        <option value="Section D">BSCS 3A</option>
+        <option value="Section E">BSCS 3B</option>
+        <option value="Section F">BSCS 3C</option>
       </select>
 
       <div class="camera-box">
@@ -758,13 +758,13 @@
       </h2>
 
       <select id="filterGallerySection" onchange="loadGalleryLogs()" style="margin-bottom:0;">
-        <option value="">All Sections</option>
-        <option value="Section A">Section A</option>
-        <option value="Section B">Section B</option>
-        <option value="Section C">Section C</option>
-        <option value="Section D">Section D</option>
-        <option value="Section E">Section E</option>
-        <option value="Section F">Section F</option>
+        <option value="">Add Section</option>
+        <option value="Section A">BSCS 2A</option>
+        <option value="Section B">BSCS 2B</option>
+        <option value="Section C">BSCS 2C</option>
+        <option value="Section D">BSCS 3A</option>
+        <option value="Section E">BSCS 3B</option>
+        <option value="Section F">BSCS 3C</option>
       </select>
 
       <div id="galleryGrid" class="gallery-grid">
@@ -785,13 +785,13 @@
       <!-- NEW: Filter Group for Section AND Session (Morning/Afternoon) -->
       <div class="filter-group">
         <select id="filterSummarySection" onchange="loadNamesSummary()">
-          <option value="">All Sections (A - F)</option>
-          <option value="Section A">Section A</option>
-          <option value="Section B">Section B</option>
-          <option value="Section C">Section C</option>
-          <option value="Section D">Section D</option>
-          <option value="Section E">Section E</option>
-          <option value="Section F">Section F</option>
+          <option value="">Add Section</option>
+        <option value="Section A">BSCS 2A</option>
+        <option value="Section B">BSCS 2B</option>
+        <option value="Section C">BSCS 2C</option>
+        <option value="Section D">BSCS 3A</option>
+        <option value="Section E">BSCS 3B</option>
+        <option value="Section F">BSCS 3C</option>
         </select>
         <select id="filterSummarySession" onchange="loadNamesSummary()">
           <option value="">All Sessions</option>
