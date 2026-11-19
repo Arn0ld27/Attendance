@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+  <title>Attendance System</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ----- THEME VARIABLES ----- */
+    :root {
+      --bg-body: #f8fafc;       /* Soft off-white background */
+      --bg-surface: #ffffff;    /* Pure white for cards */
+      --bg-surface-alt: #f1f5f9; /* Light gray for inputs */
+      
+      --text-main: #1e293b;     /* Deep slate for main text */
+      --text-muted: #64748b;    /* Medium slate for secondary text */
+      
+      --primary: #be123c;       /* Rich Crimson Red */
+      --primary-hover: #9f1239;
+      --primary-light: #fff1f2; /* Very light red for backgrounds */
+      
+      --success: #059669;       /* Calm green */
+      --success-light: #ecfdf5;
+      
+      --border: #e2e8f0;        /* Subtle borders */
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    /* ----- RESET & BASE ----- */
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-body);
+      color: var(--text-main);
+      padding: 12px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* ----- VIDEO INTRO SCREEN ----- */
+    #videoIntro {
+      position: fixed;
+      inset: 0;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      flex-direction: column;
+    }
+
+    #introVideo {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      max-height: 100vh;
+      max-width: 100vw;
+    }
+
+    .skip-btn {
+      position: absolute;
+      bottom: 30px;
+      right: 20px;
+      padding: 12px 24px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      z-index: 10000;
+      transition: 0.2s ease;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .skip-btn:hover {
+      background: var(--primary-hover);
+    }
+
+    .skip-btn:active {
+      transform: scale(0.96);
+    }
+
+    /* ----- HOME / LANDING ----- */
+    #homeView {
+      text-align: center;
+      max-width: 480px;
+      width: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 20px;
+      box-shadow: var(--shadow-lg);
+      margin: 0 auto;
+      display: none;
+    }
+    #homeView h1 {
+      color: var(--primary);
+      margin-bottom: 10px;
+      font-size: 1.6rem;
+      letter-spacing: -0.02em;
+    }
+    #homeView p {
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+    .home-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .home-btn {
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.15s ease;
+      width: 100%;
+    }
+    .btn-portal {
+      background: var(--primary);
+      color: #ffffff;
+    }
+    .btn-portal:active {
+      background: var(--primary-hover);
+    }
+    .btn-dashboard {
+      background: var(--bg-surface-alt);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+    .btn-dashboard:active {
+      background: #e2e8f0;
+    }
+
+    /* ----- APP WRAPPER ----- */
+    .app-wrapper {
+      display: none;
+      width: 100%;
+      max-width: 820px;
+      flex-direction: column;
+      align-items: center;
+      margin: 0 auto;
+    }
+
+    /* ----- NAVIGATION ----- */
+    .nav-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+    .nav-btn {
+      flex: 1 1 auto;
+      min-width: 100px;
+      padding: 12px 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      text-align: center;
+      transition: 0.15s ease;
+      white-space: nowrap;
+    }
+    .nav-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* ----- CONTAINERS ----- */
+    .container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .kiosk-card {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h2 {
+      margin-top: 0;
+      color: var(--primary);
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .clock {
+      background: var(--primary-light);
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 16px;
+      letter-spacing: 0.3px;
+      border: 1px solid #fecdd3;
+    }
+
+    /* ----- FORM ELEMENTS ----- */
+    input, select {
+      width: 100%;
+      padding: 14px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-surface-alt);
+      color: var(--text-main);
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      appearance: none;
+      transition: 0.15s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: var(--bg-surface);
+      box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.15);
+    }
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 36px;
+    }
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    /* ----- FILTER GROUP (Summary View) ----- */
+    .filter-group {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      margin-bottom: 0;
+    }
+    .filter-group select {
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    /* ----- NAME ROWS ----- */
+    .names-section {
+      margin-bottom: 12px;
+    }
+    .names-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .add-student-btn {
+      padding: 8px 14px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border: 1px solid #fecdd3;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.15s;
+    }
+    .add-student-btn:hover {
+      background: #ffe4e6;
+    }
+    .name-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .name-row input {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .remove-name-btn {
+      padding: 12px 14px;
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    /* ----- CAMERA ----- */
+    .camera-box {
+      position: relative;
+      width: 100%;
+      height: 260px;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid var(--border);
+    }
+    video, img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #video {
+      transform: scaleX(-1);
+    }
+    #preview {
+      transform: none;
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    /* ----- MODAL ----- */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px 20px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      animation: popIn 0.18s ease-out;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.94); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+    .modal-card.success .modal-icon {
+      background: var(--success-light);
+      border: 2px solid var(--success);
+      color: var(--success);
+    }
+    .modal-card.error .modal-icon {
+      background: #fee2e2;
+      border: 2px solid #ef4444;
+      color: #dc2626;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .modal-card.success .modal-title { color: var(--success); }
+    .modal-card.error .modal-title { color: #dc2626; }
+    .modal-details {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 20px;
+      word-break: break-word;
+    }
+    .modal-close-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .modal-card.success .modal-close-btn {
+      background: var(--success);
+      color: #ffffff;
+    }
+    .modal-card.error .modal-close-btn {
+      background: #ef4444;
+      color: #ffffff;
+    }
+
+    /* ----- ACTION BUTTONS ----- */
+    .action-btn {
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: 0.15s ease;
+      color: #ffffff;
+    }
+    .btn-morning { background: var(--success); }
+    .btn-morning:active { background: #047857; }
+    .btn-afternoon { background: var(--primary); }
+    .btn-afternoon:active { background: var(--primary-hover); }
+
+    .confirm-group {
+      display: none;
+      gap: 10px;
+    }
+    .btn-retake {
+      flex: 1;
+      padding: 14px;
+      background: #ef4444;
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    .btn-confirm {
+      flex: 1;
+      padding: 14px;
+      background: var(--success);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ----- DASHBOARD VIEWS ----- */
+    .dashboard-view { display: none; }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-top: 14px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .log-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow);
+    }
+    .log-card a {
+      display: block;
+      line-height: 0;
+    }
+    .log-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .log-info {
+      padding: 12px;
+    }
+    .log-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-morning { background: var(--success-light); color: var(--success); }
+    .badge-afternoon { background: var(--primary-light); color: var(--primary); }
+    .badge-group { background: #f1f5f9; color: #475569; }
+
+    /* ----- SUMMARY LIST ----- */
+    .summary-list {
+      margin-top: 14px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .section-group-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+    }
+    .section-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .section-group-title {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1rem;
+    }
+    .section-count {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    .student-entry-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .student-entry-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+    .student-entry-name {
+      color: var(--text-main);
+      font-size: 0.9rem;
+      font-weight: 500;
+      word-break: break-word;
+      flex: 1 1 140px;
+    }
+    .student-entry-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    /* ----- SMALL ACTIONS ----- */
+    .back-home {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.8rem;
+      text-decoration: underline;
+      padding: 4px 0;
+    }
+    .back-home:hover {
+      color: var(--primary);
+    }
+    .small-action-btn {
+      padding: 7px 14px;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: #ffffff;
+    }
+    .small-action-btn:active {
+      background: var(--primary-hover);
+    }
+
+    /* ----- SCROLLBAR (subtle) ----- */
+    .gallery-grid::-webkit-scrollbar,
+    .summary-list::-webkit-scrollbar {
+      width: 5px;
+    }
+    .gallery-grid::-webkit-scrollbar-thumb,
+    .summary-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 10px;
+    }
+
+    /* ----- MEDIA QUERIES (larger screens) ----- */
+    @media (min-width: 640px) {
+      body { padding: 20px; }
+      .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      }
+      .camera-box { height: 320px; }
+      .nav-btn { font-size: 0.9rem; padding: 12px; }
+      h2 { font-size: 1.2rem; }
+    }
+
+    @media (min-width: 900px) {
+      .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      }
+      .container { padding: 24px; }
+    }
+
+    /* ----- EXTRA SMALL SCREENS ----- */
+    @media (max-width: 380px) {
+      body { padding: 8px; }
+      .container { padding: 14px; border-radius: 16px; }
+      .camera-box { height: 200px; }
+      #homeView { padding: 28px 16px; }
+      #homeView h1 { font-size: 1.35rem; }
+      .name-row { flex-wrap: wrap; }
+      .name-row input { flex: 1 1 100%; }
+      .remove-name-btn { flex: 1 1 100%; text-align: center; padding: 10px; }
+      .student-entry-row { flex-direction: column; align-items: flex-start; }
+      .student-entry-meta { justify-content: flex-start; }
+      .skip-btn { bottom: 20px; right: 12px; padding: 10px 18px; font-size: 0.82rem; }
+      .filter-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- VIDEO INTRO SCREEN -->
+  <div id="videoIntro">
+    <video id="introVideo" autoplay playsinline muted>
+      <source src="logovid.mp4" type="video/mp4" />
+      <!-- Replace 'your-video-file.mp4' with your actual video file path or URL -->
+      Your browser does not support the video tag.
+    </video>
+    <button class="skip-btn" onclick="skipIntro()">Skip Intro ›</button>
+  </div>
+
+  <!-- HOME / LANDING PAGE -->
+  <div id="homeView">
+    <h1>Event Attendance Portal</h1>
+    <p>Please select your portal to proceed with attendance tracking, photo review, or section summaries.</p>
+    <div class="home-btn-group">
+      <button class="home-btn btn-portal" onclick="openApp('kiosk')">Open Attendance Kiosk</button>
+      <button class="home-btn btn-dashboard" onclick="openApp('gallery')">Open Gallery Dashboard</button>
+      <button class="home-btn btn-dashboard" onclick="openApp('summary')">Open Names Summary</button>
+    </div>
+  </div>
+
+  <!-- MAIN APP WRAPPER -->
+  <div id="appWrapper" class="app-wrapper">
+    <!-- Navigation Switcher -->
+    <div class="nav-bar">
+      <div id="tabKiosk" class="nav-btn active" onclick="switchView('kiosk')">Attendance</div>
+      <div id="tabGallery" class="nav-btn" onclick="switchView('gallery')">Gallery</div>
+      <div id="tabSummary" class="nav-btn" onclick="switchView('summary')">Summary</div>
+    </div>
+
+    <!-- KIOSK VIEW -->
+    <div id="kioskView" class="container kiosk-card">
+      <h2>
+        <span>Student Attendance Kiosk</span>
+        <button class="back-home" onclick="goHome()">Back to Home</button>
+      </h2>
+      <div class="clock" id="liveClock">Loading time...</div>
+
+      <div class="names-section">
+        <div class="names-header">
+          <span id="participantCountLabel">Participants (1)</span>
+          <button type="button" class="add-student-btn" onclick="addStudentField()">+ Add Student</button>
+        </div>
+        <div id="nameInputsContainer">
+          <div class="name-row">
+            <input type="text" class="student-name-input" placeholder="Student 1 Full Name..." required />
+          </div>
+        </div>
+      </div>
+
+      <select id="userSection">
+        <option value="" disabled selected>Select Section...</option>
+        <option value="Section A">Section A</option>
+        <option value="Section B">Section B</option>
+        <option value="Section C">Section C</option>
+        <option value="Section D">Section D</option>
+        <option value="Section E">Section E</option>
+        <option value="Section F">Section F</option>
+      </select>
+
+      <div class="camera-box">
+        <video id="video" autoplay playsinline muted></video>
+        <img id="preview" alt="Captured Proof" />
+      </div>
+
+      <button id="actionBtn" class="action-btn btn-morning" onclick="previewCapture()">Loading...</button>
+
+      <div id="confirmGroup" class="confirm-group">
+        <button class="btn-retake" onclick="retakePhoto()">Retake Photo</button>
+        <button class="btn-confirm" onclick="saveAttendance()">Confirm & Submit</button>
+      </div>
+
+      <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <!-- PHOTO GALLERY VIEW -->
+    <div id="galleryView" class="container dashboard-view">
+      <h2>
+        <span>Attendance Photo Gallery</span>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="small-action-btn" onclick="loadGalleryLogs()">Refresh</button>
+          <button class="back-home" onclick="goHome()">Back to Home</button>
+        </div>
+      </h2>
+
+      <select id="filterGallerySection" onchange="loadGalleryLogs()" style="margin-bottom:0;">
+        <option value="">All Sections</option>
+        <option value="Section A">Section A</option>
+        <option value="Section B">Section B</option>
+        <option value="Section C">Section C</option>
+        <option value="Section D">Section D</option>
+        <option value="Section E">Section E</option>
+        <option value="Section F">Section F</option>
+      </select>
+
+      <div id="galleryGrid" class="gallery-grid">
+        <div style="grid-column: 1 / -1; text-align:center; color:var(--text-muted); padding: 20px;">Loading photos...</div>
+      </div>
+    </div>
+
+    <!-- NAMES SUMMARY VIEW -->
+    <div id="summaryView" class="container dashboard-view">
+      <h2>
+        <span>Names Summary Per Section</span>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="small-action-btn" onclick="loadNamesSummary()">Refresh</button>
+          <button class="back-home" onclick="goHome()">Back to Home</button>
+        </div>
+      </h2>
+
+      <!-- NEW: Filter Group for Section AND Session (Morning/Afternoon) -->
+      <div class="filter-group">
+        <select id="filterSummarySection" onchange="loadNamesSummary()">
+          <option value="">All Sections (A - F)</option>
+          <option value="Section A">Section A</option>
+          <option value="Section B">Section B</option>
+          <option value="Section C">Section C</option>
+          <option value="Section D">Section D</option>
+          <option value="Section E">Section E</option>
+          <option value="Section F">Section F</option>
+        </select>
+        <select id="filterSummarySession" onchange="loadNamesSummary()">
+          <option value="">All Sessions</option>
+          <option value="MORNING">Morning Only</option>
+          <option value="AFTERNOON">Afternoon Only</option>
+        </select>
+      </div>
+
+      <div id="summaryContainer" class="summary-list">
+        <div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading summary...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM POP-UP MODAL -->
+  <div id="statusModal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="modalCard" class="modal-card success">
+      <div id="modalIcon" class="modal-icon">✓</div>
+      <div id="modalTitle" class="modal-title">Attendance Sent Successfully</div>
+      <div id="modalDetails" class="modal-details"></div>
+      <button type="button" id="modalCloseBtn" class="modal-close-btn" onclick="closeStatusModal()">Done</button>
+    </div>
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://sbufdzymkdgyyypxoems.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNidWZkenlta2RneXl5cHhvZW1zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ5NzcwNTQsImV4cCI6MjExMDU1MzA1NH0.rtFwTo-ESJsYMx80elDSG0ExxD0fkxxQHIkviIuxvEI';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const ALL_SECTIONS = ['Section A', 'Section B', 'Section C', 'Section D', 'Section E', 'Section F'];
+
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const preview = document.getElementById('preview');
+  const liveClock = document.getElementById('liveClock');
+  const actionBtn = document.getElementById('actionBtn');
+  const confirmGroup = document.getElementById('confirmGroup');
+  const nameInputsContainer = document.getElementById('nameInputsContainer');
+  const participantCountLabel = document.getElementById('participantCountLabel');
+  const statusModal = document.getElementById('statusModal');
+  const modalCard = document.getElementById('modalCard');
+  const modalIcon = document.getElementById('modalIcon');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalDetails = document.getElementById('modalDetails');
+  const modalCloseBtn = document.getElementById('modalCloseBtn');
+  const introVideo = document.getElementById('introVideo');
+  const videoIntro = document.getElementById('videoIntro');
+
+  let capturedBlob = null;
+  let introEnded = false;
+
+  // ----- VIDEO INTRO LOGIC -----
+  function skipIntro() {
+    if (introEnded) return;
+    introEnded = true;
+    videoIntro.style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+    introVideo.pause();
+  }
+
+  introVideo.addEventListener('ended', skipIntro);
+
+  introVideo.addEventListener('error', () => {
+    console.warn('Intro video failed to load. Skipping intro.');
+    setTimeout(skipIntro, 800);
+  });
+
+  introVideo.addEventListener('canplay', () => {
+    introVideo.play().catch(() => {
+      setTimeout(skipIntro, 1200);
+    });
+  });
+
+  setTimeout(() => {
+    if (!introEnded) {
+      console.warn('Intro timeout reached. Skipping.');
+      skipIntro();
+    }
+  }, 15000);
+
+  // ----- APP LOGIC -----
+  function refreshStudentRows() {
+    const rows = nameInputsContainer.querySelectorAll('.name-row');
+    participantCountLabel.textContent = `Participants (${rows.length})`;
+    rows.forEach((row, index) => {
+      const input = row.querySelector('.student-name-input');
+      input.placeholder = `Student ${index + 1} Full Name...`;
+      let removeBtn = row.querySelector('.remove-name-btn');
+      if (rows.length > 1) {
+        if (!removeBtn) {
+          removeBtn = document.createElement('button');
+          removeBtn.type = 'button';
+          removeBtn.className = 'remove-name-btn';
+          removeBtn.textContent = 'Remove';
+          removeBtn.onclick = () => {
+            row.remove();
+            refreshStudentRows();
+          };
+          row.appendChild(removeBtn);
+        }
+      } else if (removeBtn) {
+        removeBtn.remove();
+      }
+    });
+  }
+
+  function addStudentField() {
+    const row = document.createElement('div');
+    row.className = 'name-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'student-name-input';
+    input.required = true;
+    row.appendChild(input);
+    nameInputsContainer.appendChild(row);
+    refreshStudentRows();
+    input.focus();
+  }
+
+  function resetStudentFields() {
+    nameInputsContainer.innerHTML = `
+      <div class="name-row">
+        <input type="text" class="student-name-input" placeholder="Student 1 Full Name..." required />
+      </div>
+    `;
+    refreshStudentRows();
+  }
+
+  function getStudentNames() {
+    const inputs = Array.from(document.querySelectorAll('.student-name-input'));
+    const names = [];
+    for (const input of inputs) {
+      const val = input.value.trim();
+      if (!val) {
+        return { error: 'Please fill out all student name fields or remove extra blank fields.' };
+      }
+      names.push(val);
+    }
+    return { names };
+  }
+
+  function parseNameAndSection(rawName) {
+    const match = rawName.match(/^(.*)\s+\((Section [A-F])\)$/i);
+    if (match) {
+      return { studentName: match[1].trim(), section: match[2] };
+    }
+    const foundSection = ALL_SECTIONS.find(sec => rawName.includes(sec)) || 'Unassigned';
+    return { studentName: rawName, section: foundSection };
+  }
+
+  function showStatusModal(type, title, details, buttonLabel = 'Done') {
+    modalCard.className = `modal-card ${type}`;
+    modalIcon.textContent = type === 'success' ? '✓' : '!';
+    modalTitle.textContent = title;
+    modalDetails.textContent = details;
+    modalCloseBtn.textContent = buttonLabel;
+    statusModal.classList.add('open');
+    modalCloseBtn.focus();
+  }
+
+  function closeStatusModal() {
+    statusModal.classList.remove('open');
+  }
+
+  statusModal.addEventListener('click', (e) => {
+    if (e.target === statusModal) closeStatusModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && statusModal.classList.contains('open')) {
+      closeStatusModal();
+    }
+  });
+
+  // Live Clock & Dynamic Button Text Updater
+  setInterval(() => {
+    const now = new Date();
+    liveClock.textContent = now.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'medium' });
+
+    if (preview.style.display !== 'block') {
+      const hours = now.getHours();
+      if (hours < 12) {
+        actionBtn.textContent = "Time In (Morning)";
+        actionBtn.className = "action-btn btn-morning";
+      } else {
+        actionBtn.textContent = "Time In (Afternoon)";
+        actionBtn.className = "action-btn btn-afternoon";
+      }
+    }
+  }, 1000);
+
+  // Transition from Home to App
+  function openApp(targetMode) {
+    document.getElementById('homeView').style.display = 'none';
+    document.getElementById('appWrapper').style.display = 'flex';
+    switchView(targetMode);
+  }
+
+  // Return to Home Page
+  function goHome() {
+    stopCamera();
+    document.getElementById('appWrapper').style.display = 'none';
+    document.getElementById('homeView').style.display = 'block';
+  }
+
+  function switchView(mode) {
+    document.getElementById('kioskView').style.display = 'none';
+    document.getElementById('galleryView').style.display = 'none';
+    document.getElementById('summaryView').style.display = 'none';
+
+    document.getElementById('tabKiosk').classList.remove('active');
+    document.getElementById('tabGallery').classList.remove('active');
+    document.getElementById('tabSummary').classList.remove('active');
+
+    if (mode === 'kiosk') {
+      document.getElementById('kioskView').style.display = 'block';
+      document.getElementById('tabKiosk').classList.add('active');
+      startCamera();
+    } else if (mode === 'gallery') {
+      document.getElementById('galleryView').style.display = 'block';
+      document.getElementById('tabGallery').classList.add('active');
+      stopCamera();
+      loadGalleryLogs();
+    } else if (mode === 'summary') {
+      document.getElementById('summaryView').style.display = 'block';
+      document.getElementById('tabSummary').classList.add('active');
+      stopCamera();
+      loadNamesSummary();
+    }
+  }
+
+  async function startCamera() {
+    try {
+      if (video.srcObject) return;
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+      video.srcObject = stream;
+      video.onloadedmetadata = () => {
+        video.play().catch(e => console.log("Play error:", e));
+      };
+    } catch (err) {
+      console.error("Camera error:", err);
+      showStatusModal('error', 'Camera Unavailable', 'Unable to access camera. Please check browser permissions or close other apps using the camera.', 'Close');
+    }
+  }
+
+  function stopCamera() {
+    if (video.srcObject) {
+      let tracks = video.srcObject.getTracks();
+      tracks.forEach(track => track.stop());
+      video.srcObject = null;
+    }
+  }
+
+  function dataURItoBlob(dataURI) {
+    const byteString = atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+  }
+
+  function previewCapture() {
+    const { names, error } = getStudentNames();
+    const section = document.getElementById('userSection').value;
+
+    if (error) {
+      showStatusModal('error', 'Missing Student Name', error, 'Okay');
+      return;
+    }
+    if (!section) {
+      showStatusModal('error', 'Missing Section', 'Please select your section before capturing your photo.', 'Okay');
+      return;
+    }
+
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      showStatusModal('error', 'Camera Not Ready', 'Please wait a moment while the camera feed initializes.', 'Okay');
+      return;
+    }
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+    const now = new Date();
+    const sessionLabel = now.getHours() < 12 ? 'TIME IN (MORNING)' : 'TIME IN (AFTERNOON)';
+    const timestamp = now.toLocaleString('en-US', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const groupSummary = names.length > 1
+      ? `GROUP (${names.length}): ${names.map(n => n.toUpperCase()).join(', ')}`
+      : names[0].toUpperCase();
+
+    // Watermark inside the captured image
+    ctx.fillStyle = "rgba(255, 255, 255, 0.9)"; // White watermark background
+    ctx.fillRect(0, canvas.height - 96, canvas.width, 96);
+
+    ctx.fillStyle = now.getHours() < 12 ? '#059669' : '#be123c'; // Green for morning, Crimson for afternoon
+    ctx.font = "bold 16px sans-serif";
+    ctx.fillText(`${sessionLabel} — ${groupSummary}`.slice(0, 72), 16, canvas.height - 62);
+
+    ctx.fillStyle = "#be123c"; // Crimson
+    ctx.font = "15px sans-serif";
+    ctx.fillText(`Section: ${section}`, 16, canvas.height - 36);
+
+    ctx.fillStyle = "#1e293b"; // Deep slate
+    ctx.font = "14px monospace";
+    ctx.fillText(`Time: ${timestamp}`, 16, canvas.height - 12);
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    video.style.display = 'none';
+
+    capturedBlob = dataURItoBlob(dataUrl);
+
+    actionBtn.style.display = 'none';
+    confirmGroup.style.display = 'flex';
+  }
+
+  function retakePhoto() {
+    preview.style.display = 'none';
+    video.style.display = 'block';
+    confirmGroup.style.display = 'none';
+    actionBtn.style.display = 'block';
+    capturedBlob = null;
+  }
+
+  async function saveAttendance() {
+    const { names, error } = getStudentNames();
+    const section = document.getElementById('userSection').value;
+    const now = new Date();
+    const sessionLabel = now.getHours() < 12 ? 'TIME IN (MORNING)' : 'TIME IN (AFTERNOON)';
+    const timeRecorded = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    if (error || !names || names.length === 0) {
+      showStatusModal('error', 'Missing Student Name', error || 'Please enter at least one student name.', 'Okay');
+      return;
+    }
+
+    const confirmBtn = document.querySelector('.btn-confirm');
+    const retakeBtn = document.querySelector('.btn-retake');
+    confirmBtn.disabled = true;
+    retakeBtn.disabled = true;
+    confirmBtn.textContent = "Uploading...";
+
+    try {
+      const tag = names.length > 1 ? `GROUP_${names.length}` : names[0].replace(/\s+/g, '_');
+      const fileName = `${section}_${tag}_${Date.now()}.jpg`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('attendance-photos')
+        .upload(fileName, capturedBlob, { contentType: 'image/jpeg' });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabaseClient.storage
+        .from('attendance-photos')
+        .getPublicUrl(fileName);
+
+      const rowsToInsert = names.map(studentName => ({
+        name: `${studentName} (${section})`,
+        status: sessionLabel,
+        image_url: publicUrl
+      }));
+
+      const { error: dbError } = await supabaseClient
+        .from('attendance_logs')
+        .insert(rowsToInsert);
+
+      if (dbError) throw dbError;
+
+      resetStudentFields();
+      document.getElementById('userSection').selectedIndex = 0;
+      retakePhoto();
+
+      showStatusModal(
+        'success',
+        'Attendance Sent Successfully',
+        `Recorded ${names.length} ${names.length === 1 ? 'student' : 'students'} (${names.join(', ')}) under ${section} for ${sessionLabel} at ${timeRecorded}.`,
+        'Done'
+      );
+
+    } catch (err) {
+      console.error(err);
+      showStatusModal('error', 'Upload Failed', `Could not save attendance: ${err.message}`, 'Try Again');
+    } finally {
+      confirmBtn.disabled = false;
+      retakeBtn.disabled = false;
+      confirmBtn.textContent = "Confirm & Submit";
+    }
+  }
+
+  async function fetchAllLogs() {
+    const { data, error } = await supabaseClient
+      .from('attendance_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(300);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  // Merge duplicate photo cards in Gallery view without showing name label below the photo
+  async function loadGalleryLogs() {
+    const grid = document.getElementById('galleryGrid');
+    const selectedSection = document.getElementById('filterGallerySection').value;
+    grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:var(--text-muted); padding: 20px;">Fetching photos...</div>`;
+
+    try {
+      const data = await fetchAllLogs();
+
+      const filtered = selectedSection
+        ? data.filter(row => row.name.includes(selectedSection))
+        : data;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:var(--text-muted); padding: 20px;">No photos found${selectedSection ? ` for ${selectedSection}` : ''}.</div>`;
+        return;
+      }
+
+      const groupedByPhoto = [];
+      const photoMap = new Map();
+
+      for (const row of filtered) {
+        const key = row.image_url || `no-img-${row.id}`;
+        if (!photoMap.has(key)) {
+          const item = {
+            image_url: row.image_url,
+            status: row.status,
+            created_at: row.created_at,
+            count: 1
+          };
+          photoMap.set(key, item);
+          groupedByPhoto.push(item);
+        } else {
+          photoMap.get(key).count += 1;
+        }
+      }
+
+      grid.innerHTML = '';
+      groupedByPhoto.forEach(group => {
+        const formattedDate = new Date(group.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' });
+        const isMorning = group.status.includes('MORNING');
+        const badgeClass = isMorning ? 'badge-morning' : 'badge-afternoon';
+        const isGroup = group.count > 1;
+
+        const card = document.createElement('div');
+        card.className = 'log-card';
+        card.innerHTML = `
+          <a href="${group.image_url}" target="_blank" title="Click to enlarge photo">
+            <img src="${group.image_url}" alt="Attendance Proof" loading="lazy" />
+          </a>
+          <div class="log-info">
+            <div class="log-meta">
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                <span class="badge ${badgeClass}">${group.status}</span>
+                ${isGroup ? `<span class="badge badge-group">Group (${group.count})</span>` : ''}
+              </div>
+              <span style="font-size:0.72rem;">${formattedDate}</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+    } catch (err) {
+      console.error(err);
+      grid.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; color:#dc2626; padding: 20px;">Error loading photos.</div>`;
+    }
+  }
+
+  // Names Summary grouped per section, with Session filter
+  async function loadNamesSummary() {
+    const container = document.getElementById('summaryContainer');
+    const selectedSection = document.getElementById('filterSummarySection').value;
+    const selectedSession = document.getElementById('filterSummarySession').value;
+
+    container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">Loading section summary...</div>`;
+
+    try {
+      const data = await fetchAllLogs();
+
+      const sectionsToRender = selectedSection ? [selectedSection] : ALL_SECTIONS;
+      const buckets = new Map();
+      sectionsToRender.forEach(sec => buckets.set(sec, []));
+
+      for (const row of data) {
+        const { studentName, section } = parseNameAndSection(row.name);
+        
+        // 1. Filter by Section
+        if (selectedSection && section !== selectedSection) continue;
+        
+        // 2. Filter by Session (Morning/Afternoon)
+        if (selectedSession) {
+          const isMorningRow = row.status.includes('MORNING');
+          if (selectedSession === 'MORNING' && !isMorningRow) continue;
+          if (selectedSession === 'AFTERNOON' && isMorningRow) continue;
+        }
+
+        if (!buckets.has(section)) {
+          buckets.set(section, []);
+        }
+        buckets.get(section).push({
+          studentName,
+          status: row.status,
+          created_at: row.created_at
+        });
+      }
+
+      container.innerHTML = '';
+      
+      // Check if there are any records at all after filtering
+      let hasRecords = false;
+      for (const records of buckets.values()) {
+        if (records.length > 0) hasRecords = true;
+      }
+      
+      if (!hasRecords) {
+        container.innerHTML = `<div style="text-align:center; color:var(--text-muted); padding: 20px;">No records found for the selected filters.</div>`;
+        return;
+      }
+
+      for (const [sectionName, records] of buckets.entries()) {
+        // Skip rendering empty sections if a specific filter is applied
+        if (records.length === 0 && (selectedSection || selectedSession)) continue;
+
+        const card = document.createElement('div');
+        card.className = 'section-group-card';
+
+        const rowsHtml = records.length > 0
+          ? records.map(rec => {
+              const timeStr = new Date(rec.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+              const isMorning = rec.status.includes('MORNING');
+              const badgeClass = isMorning ? 'badge-morning' : 'badge-afternoon';
+              return `
+                <div class="student-entry-row">
+                  <span class="student-entry-name">${rec.studentName}</span>
+                  <div class="student-entry-meta">
+                    <span class="badge ${badgeClass}">${rec.status}</span>
+                    <span>${timeStr}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')
+          : `<div style="color:#94a3b8; font-size:0.86rem; padding: 6px 0;">No attendance records for this section yet.</div>`;
+
+        card.innerHTML = `
+          <div class="section-group-header">
+            <span class="section-group-title">${sectionName}</span>
+            <span class="section-count">${records.length} ${records.length === 1 ? 'Entry' : 'Entries'}</span>
+          </div>
+          ${rowsHtml}
+        `;
+        container.appendChild(card);
+      }
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `<div style="text-align:center; color:#dc2626; padding: 20px;">Error loading section summary.</div>`;
+    }
+  }
+</script>
+
+</body>
+</html>
